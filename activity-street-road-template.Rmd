@@ -1,6 +1,6 @@
 ---
 title: "Activity: Street or Road?"
-author: "YOUR NAME HERE"
+author: "Jared Hayes"
 output: html_notebook
 ---
 
@@ -8,10 +8,12 @@ output: html_notebook
 
 ```{r}
 #load libraries 
-
+library(tidyverse)
 #load in the data here 
 # we will only be using the "street-addresses.csv" file from the text
-
+download.file(url="https://mdbeckman.github.io/dcSupplement/data/CMS_ProvidersSimple.rds",
+              destfile = "Data.rds")
+DataTable <- readRDS("Data.rds")
 
 
 ```
@@ -19,21 +21,34 @@ output: html_notebook
 ## Recreate Solved Example using `sample(50)`
 
 ```{r}
+Addresses <- read_csv("https://mdbeckman.github.io/dcSupplement/data/street-addresses.csv")
+Sample <- 
+  Addresses %>%
+  sample_n(size = 50)
+pattern <- "BOX\\s+(\\d+)"
 
-
+BoxNumbers <- 
+  Sample %>%
+  filter(grepl(pattern, address)) %>%
+  tidyr::extract(address, into = "boxnum", regex = pattern)
 ```
 
 ## Recreate Soved Example using the entire `Address` data set
 
 ```{r}
 
+all_box_numbers<-
+  Addresses%>%
+  filter(grepl(pattern, address)) %>%
+  tidyr::extract(address, into = "boxnum", regex = pattern)
 
 ```
 
 #### Additional Question: How many addresses are a PO BOX (including NCSU BOX)? 
 
 ```{r}
-
+all_box_numbers%>%
+  summarise(count=n())
 
 ```
 
@@ -55,13 +70,27 @@ LeftOvers <-
 ```
 
 My answer here.......
+First line creates new variable 
+Second line identifies data set we will be manipulating 
+Third line finds strings that don't end with st, road or rd
+Fourth line finds strings that aren't in the form of an apartment 
+Fifth line finds strings that don't have the word box 
 
 #### Part 2: Implement your method on the entire `Addresses` data set. Explain how your code works line by line.
 
 ```{r}
 
-
-
+pattern <- "(ST|RD|ROAD|CIRCLE|DR|LN|CT|DRIVE|COURT|WAY|BLVD|PL|LOOP|PKWY|AVE|AVENUE|CV|CIR|LANE|TRAIL|TRL)"
+LeftOvers <-
+  Addresses %>% 
+  filter( !grepl(pattern, address),
+          !grepl("\\sAPT|UNIT\\s[\\d]+$", address),
+          !grepl("BOX ", address)
+          )
+endings<-
+  Addresses%>%
+  filter(grepl(pattern, address))%>%
+  tidyr::extract(address, into = "streetEnding", regex = pattern)
 ```
 
 My answer here.......
@@ -69,8 +98,10 @@ My answer here.......
 #### Additional Question 1: Present your result from part 2 by providing a table in descending order of popularity for the street name endings you found
 
 ```{r}
-
-
+ending_counts<-table(endings)
+ending_counts_df<-data.frame(ending = names(ending_counts), count = as.vector(ending_counts))%>%
+  arrange(desc(count))
+ending_counts_df
 ```
 
 #### Additional Question 2: Present your result by using ggplot to a bar chart in descending order of popularity for the street name endings you found previously.
@@ -78,9 +109,16 @@ My answer here.......
 Note: make sure your order street names according to popularity, not alphabetically.
 
 ```{r}
-
+ggplot(ending_counts_df, aes(x = reorder(ending, -count), y = count)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  labs(title = "Street Name Endings", x = "Ending", y = "Count") 
+   
 ```
 
 #### Additional Question 3: Comment on any patterns you see
 
 My answer here.......
+
+Road is most popular when adding together road and rd. 
+Abbreviations are much more common than spelling out the whole word. 
+There are a few endings with a load of addresses and a lot of endings with few addresses. 
